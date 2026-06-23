@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control Financiero Completo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-light">
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="#"><i class="fa-solid fa-vault me-2 text-warning"></i>Panel de Control General</a>
+            <div class="d-flex gap-2">
+                <a href="{% url 'crear_cuenta' %}" class="btn btn-sm btn-success"><i class="fa-solid fa-plus me-1"></i> Cuenta</a>
+                <a href="{% url 'ingresar_recursos' %}" class="btn btn-sm btn-info text-white"><i class="fa-solid fa-arrow-down-to-square me-1"></i> Ingreso</a>
+                <a href="{% url 'crear_gasto' %}" class="btn btn-sm btn-danger"><i class="fa-solid fa-plus me-1"></i> Gasto</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show shadow-sm" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="row mb-4">
+            <div class="col-md-6 mb-3">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-white fw-bold"><i class="fa-solid fa-chart-pie text-primary me-2"></i>Distribución del Capital Total</div>
+                    <div class="card-body d-flex align-items-center justify-content-center">
+                        <canvas id="cuentasChart" style="max-height: 220px; max-width: 220px;"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-white fw-bold"><i class="fa-solid fa-building-columns text-success me-2"></i>Saldos de Cuentas</div>
+                    <ul class="list-group list-group-flush">
+                        {% for cuenta in cuentas %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <div>
+                                <strong>{{ cuenta.nombre }}</strong><br>
+                                <small class="text-muted">{{ cuenta.banco }}</small>
+                            </div>
+                            <div class="text-end d-flex align-items-center gap-3">
+                                <span class="fs-5 fw-bold text-success">${{ cuenta.saldo_actual }}</span>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'editar_cuenta' cuenta.id %}" class="btn btn-outline-secondary border-0" title="Editar"><i class="fa-solid fa-pen"></i></a>
+                                    <a href="{% url 'eliminar_cuenta' cuenta.id %}" class="btn btn-outline-danger border-0" title="Eliminar" onclick="return confirm('¿Seguro que deseas eliminar la cuenta \'{{ cuenta.nombre }}\'?');"><i class="fa-solid fa-trash"></i></a>
+                                </div>
+                            </div>
+                        </li>
+                        {% empty %}
+                        <li class="list-group-item text-center text-muted py-4">No hay cuentas.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-7 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white fw-bold"><i class="fa-solid fa-money-bill text-danger me-2"></i>Flujo de Gastos</div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light"><tr><th>Detalle</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead>
+                            <tbody>
+                                {% for gasto in gastos %}
+                                <tr>
+                                    <td>{{ gasto.descripcion }}<br><small class="text-muted">Pendiente: ${{gasto.monto_pendiente}}</small></td>
+                                    <td class="fw-bold">${{ gasto.monto_total }}</td>
+                                    <td><span class="badge {% if gasto.estado == 'PENDIENTE' %}bg-warning text-dark{% elif gasto.estado == 'APROBADO' %}bg-info{% elif gasto.estado == 'CANCELADO' %}bg-danger{% else %}bg-success{% endif %}">{{ gasto.estado }}</span></td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            {% if gasto.estado == 'PENDIENTE' %}
+                                                <a href="{% url 'procesar_gasto' gasto.id 'aprobar' %}" class="btn btn-outline-success"><i class="fa-solid fa-check"></i></a>
+                                                <a href="{% url 'procesar_gasto' gasto.id 'cancelar' %}" class="btn btn-outline-danger"><i class="fa-solid fa-ban"></i></a>
+                                            {% elif gasto.estado == 'APROBADO' or gasto.estado == 'PAGADO_PARCIAL' %}
+                                                <a href="{% url 'solicitar_pago' gasto.id %}" class="btn btn-primary"><i class="fa-solid fa-bolt"></i> Pagar</a>
+                                                <a href="{% url 'procesar_gasto' gasto.id 'cancelar' %}" class="btn btn-outline-danger"><i class="fa-solid fa-ban"></i></a>
+                                            {% else %}
+                                                <button class="btn btn-light" disabled><i class="fa-solid fa-lock text-muted"></i></button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="4" class="text-center text-muted py-3">No hay gastos.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% if gastos.has_other_pages %}
+                    <div class="card-footer bg-white d-flex justify-content-center py-2">
+                        <nav>
+                            <ul class="pagination pagination-sm mb-0">
+                                {% for i in gastos.paginator.page_range %}
+                                    <li class="page-item {% if gastos.number == i %}active{% endif %}">
+                                        <a class="page-link" href="?page_gastos={{ i }}&page_pagos={{ current_page_pagos }}">{{ i }}</a>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </nav>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-lg-5 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white fw-bold"><i class="fa-solid fa-credit-card text-primary me-2"></i>Flujo de Pagos</div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light"><tr><th>Gasto / Monto</th><th>Estado</th><th>Acciones</th></tr></thead>
+                            <tbody>
+                                {% for p in pagos %}
+                                <tr>
+                                    <td><small>{{ p.gasto.descripcion }}</small><br><strong>${{ p.monto }}</strong></td>
+                                    <td><span class="badge {% if p.estado == 'PENDIENTE' %}bg-warning text-dark{% elif p.estado == 'EFECTUADO' %}bg-success{% else %}bg-secondary{% endif %}">{{ p.estado }}</span></td>
+                                    <td>
+                                        {% if p.estado == 'PENDIENTE' %}
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{% url 'procesar_pago' p.id 'efectuar' %}" class="btn btn-success"><i class="fa-solid fa-wallet"></i> Cobrar</a>
+                                                <a href="{% url 'procesar_pago' p.id 'cancelar' %}" class="btn btn-outline-secondary"><i class="fa-solid fa-xmark"></i></a>
+                                            </div>
+                                        {% else %}
+                                            <span class="text-muted"><small>Procesado</small></span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="3" class="text-center text-muted py-3">No hay pagos.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% if pagos.has_other_pages %}
+                    <div class="card-footer bg-white d-flex justify-content-center py-2">
+                        <nav>
+                            <ul class="pagination pagination-sm mb-0">
+                                {% for i in pagos.paginator.page_range %}
+                                    <li class="page-item {% if pagos.number == i %}active{% endif %}">
+                                        <a class="page-link" href="?page_gastos={{ current_page_gastos }}&page_pagos={{ i }}">{{ i }}</a>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </nav>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const nombresCuentas = JSON.parse('{{ nombres_cuentas_json|safe }}');
+        const saldosCuentas = JSON.parse('{{ saldos_cuentas_json|safe }}');
+
+        const ctx = document.getElementById('cuentasChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'pie', // <-- Cambiado de 'bar' a 'pie'
+            data: {
+                labels: nombresCuentas,
+                datasets: [{
+                    data: saldosCuentas,
+                    backgroundColor: [
+                        'rgba(13, 110, 253, 0.75)',  // Azul
+                        'rgba(25, 135, 84, 0.75)',   // Verde
+                        'rgba(255, 193, 7, 0.75)',   // Amarillo
+                        'rgba(220, 53, 69, 0.75)',   // Rojo
+                        'rgba(111, 66, 193, 0.75)'   // Morado
+                    ],
+                    borderColor: '#ffffff',
+                    borderWidth: 2
+                }]
+            },
+            options: { 
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom', // Mueve las etiquetas abajo para que se vea más limpio
+                        labels: { boxWidth: 12, font: { size: 11 } }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

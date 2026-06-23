@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Asignar Cuenta Emisora</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-light">
+    <div class="container mt-5" style="max-width: 550px;">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fa-solid fa-money-check-dollar me-2"></i>Preparar Transacción de Pago</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-secondary py-2">
+                    <small class="text-muted d-block">Gasto seleccionado:</small>
+                    <strong>{{ gasto.descripcion }}</strong>
+                    <span class="float-end fw-bold text-dark">${{ gasto.monto_pendiente }}</span>
+                </div>
+
+                <form method="POST"> {% csrf_token %}
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-secondary">Selecciona la Cuenta de Desembolso:</label>
+                        <select name="cuenta" class="form-select form-select-lg" required>
+                            <option value="" disabled selected>-- Elegir Cuenta Bancaria --</option>
+                            {% for cuenta in cuentas %}
+                                <option value="{{ cuenta.id }}">
+                                    {{ cuenta.nombre }} ({{ cuenta.banco }}) — Disp: ${{ cuenta.saldo_actual }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 btn-lg">Generar Orden de Pago</button>
+                    <a href="{% url 'dashboard' %}" class="btn btn-link w-100 mt-2 text-muted">Volver al Dashboard</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

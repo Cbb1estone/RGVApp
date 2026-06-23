@@ -1,0 +1,43 @@
+<div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+        <thead class="table-light"><tr><th>Detalle</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead>
+        <tbody>
+            {% for gasto in gastos %}
+            <tr>
+                <td>{{ gasto.descripcion }}<br><small class="text-muted">Pendiente: ${{gasto.monto_pendiente}}</small></td>
+                <td class="fw-bold">${{ gasto.monto_total }}</td>
+                <td><span class="badge {% if gasto.estado == 'PENDIENTE' %}bg-warning text-dark{% elif gasto.estado == 'APROBADO' %}bg-info{% elif gasto.estado == 'CANCELADO' %}bg-danger{% else %}bg-success{% endif %}">{{ gasto.estado }}</span></td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        {% if gasto.estado == 'PENDIENTE' %}
+                            <a href="{% url 'procesar_gasto' gasto.id 'aprobar' %}" class="btn btn-outline-success"><i class="fa-solid fa-check"></i></a>
+                            <a href="{% url 'procesar_gasto' gasto.id 'cancelar' %}" class="btn btn-outline-danger"><i class="fa-solid fa-ban"></i></a>
+                        {% elif gasto.estado == 'APROBADO' or gasto.estado == 'PAGADO_PARCIAL' %}
+                            <a href="{% url 'solicitar_pago' gasto.id %}" class="btn btn-primary"><i class="fa-solid fa-bolt"></i> Pagar</a>
+                            <a href="{% url 'procesar_gasto' gasto.id 'cancelar' %}" class="btn btn-outline-danger"><i class="fa-solid fa-ban"></i></a>
+                        {% else %}
+                            <button class="btn btn-light" disabled><i class="fa-solid fa-lock text-muted"></i></button>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center text-muted py-3">No hay gastos.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if gastos.has_other_pages %}
+<div class="card-footer bg-white d-flex justify-content-center py-2">
+    <nav>
+        <ul class="pagination pagination-sm mb-0">
+            {% for i in gastos.paginator.page_range %}
+                <li class="page-item {% if gastos.number == i %}active{% endif %}">
+                    <a class="page-link" href="#" onclick="cargarGastos('{{ i }}'); return false;">{{ i }}</a>
+                </li>
+            {% endfor %}
+        </ul>
+    </nav>
+</div>
+{% endif %}
