@@ -19,3 +19,20 @@ __pycache__/
 # Configuraciones del editor
 .vscode/
 .idea/
+
+# Terraform — credenciales y estado
+Terraform/terraform.tfvars
+Terraform/*.tfstate
+Terraform/*.tfstate.backup
+Terraform/.terraform/
+Terraform/.terraform.lock.hcl
+
+# Llaves SSH
+*.pem
+
+# Variables de entorno
+.env
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
